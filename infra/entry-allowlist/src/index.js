@@ -46,10 +46,16 @@ const isAllowedSource = (remoteAddress) => {
 const addAllowlist = (ip, ttlSeconds, cb) => {
   const ttl = Math.min(ttlSeconds, MAX_TTL_SECONDS);
   const element = `{ ${ip} timeout ${ttl}s }`;
-  const args = ['add', 'element', NFT_FAMILY, NFT_TABLE, NFT_SET, element];
-  execFile('nft', args, (err, stdout, stderr) => {
-    if (err) return cb(err, stderr || stdout);
-    return cb(null, stdout);
+  const replaceArgs = ['replace', 'element', NFT_FAMILY, NFT_TABLE, NFT_SET, element];
+  const addArgs = ['add', 'element', NFT_FAMILY, NFT_TABLE, NFT_SET, element];
+
+  execFile('nft', replaceArgs, (err, stdout, stderr) => {
+    if (!err) return cb(null, stdout);
+
+    execFile('nft', addArgs, (addErr, addStdout, addStderr) => {
+      if (addErr) return cb(addErr, addStderr || addStdout || stderr || stdout);
+      return cb(null, addStdout);
+    });
   });
 };
 

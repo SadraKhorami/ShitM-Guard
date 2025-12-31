@@ -85,7 +85,7 @@ Even if Origin IP leaks, it does not answer on the public interface.
 
 ## nftables (Minimal, Realistic)
 ### Entry Gateway (Public)
-**Goal: fast drop + short lived allowlist + rate limiting**
+**Goal: fast drop + short lived allowlist + forwarding to Origin**
 
 ```
 table inet filter {
@@ -106,11 +106,27 @@ table inet filter {
     # SSH only from management IP
     ip saddr { 203.0.113.10 } tcp dport 22 accept
 
+    # WireGuard (replace with Origin public IP)
+    ip saddr { 198.51.100.20 } udp dport 51820 accept
+
     # UDP 30120 only from allowlist
     udp dport 30120 ip saddr @allow_udp_30120 accept
 
     # Fast drop for unknowns
     udp dport 30120 limit rate over 200/second drop
+  }
+
+  chain forward {
+    type filter hook forward priority 0;
+    policy drop;
+
+    ct state invalid drop
+
+    # Client -> Origin (allowlisted only)
+    iif != "wg0" oif "wg0" udp dport 30120 ip saddr @allow_udp_30120 accept
+
+    # Origin -> Client (return path)
+    iif "wg0" udp sport 30120 accept
   }
 }
 
@@ -120,7 +136,21 @@ table inet raw {
     udp dport 30120 notrack
   }
 }
+
+table ip nat {
+  chain prerouting {
+    type nat hook prerouting priority -100;
+    udp dport 30120 dnat to 10.66.0.2:30120
+  }
+
+  chain postrouting {
+    type nat hook postrouting priority 100;
+    oif "wg0" masquerade
+  }
+}
 ```
+
+Note: With masquerade, Origin will see Entry IP as the client IP. If you need real client IPs, use policy routing instead of SNAT.
 
 ### Origin (Hidden)
 ```
@@ -155,6 +185,8 @@ net.core.rmem_default = 262144
 net.core.wmem_default = 262144
 net.ipv4.udp_rmem_min = 16384
 net.ipv4.udp_wmem_min = 16384
+
+net.ipv4.ip_forward = 1
 
 net.netfilter.nf_conntrack_max = 262144
 net.netfilter.nf_conntrack_udp_timeout = 30
@@ -276,6 +308,10 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
    - listen on WG IP only, protect with `X-Entry-Token`
    - set `ALLOWED_SOURCES` to limit who can call the allowlist API
    - IPv4 only by default (expand if you need IPv6)
+4) Optional helper: `infra/deploy/entry-setup.sh`
+5) Edit `infra/nftables/entry.nft`:
+   - replace the Origin public IP in the WireGuard allow rule
+   - replace `10.66.0.2` with your Origin WG IP
 
 ### Origin
 1) Apply `infra/nftables/origin.nft`.
@@ -283,6 +319,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
 3) FXServer resource:
    - `fivem/resources/[security]/auth_gate`
    - set `auth_api_base` and `auth_api_secret` in `server.cfg`
+4) Optional helper: `infra/deploy/origin-setup.sh`
 
 Example `server.cfg`:
 ```
@@ -299,6 +336,7 @@ ensure auth_gate
 4) Generate Cloudflare real IP list via `infra/nginx/update-cloudflare-ips.sh` and place it at `/etc/nginx/cloudflare_realip.conf`.
 5) Include `/etc/nginx/security.conf` and `/etc/nginx/ratelimits.conf` (templates in `infra/nginx/`).
    - `ratelimits.conf` must be included in the `http {}` context.
+6) Optional helper: `infra/deploy/web-setup.sh`
 
 ---
 

@@ -16,11 +16,27 @@ table inet filter {
     # SSH only from management IP
     ip saddr { 203.0.113.10 } tcp dport 22 accept
 
+    # WireGuard (replace with Origin public IP)
+    ip saddr { 198.51.100.20 } udp dport 51820 accept
+
     # Allow only allowlisted UDP clients
     udp dport 30120 ip saddr @allow_udp_30120 accept
 
     # Drop noisy unknowns fast
     udp dport 30120 limit rate over 200/second drop
+  }
+
+  chain forward {
+    type filter hook forward priority 0;
+    policy drop;
+
+    ct state invalid drop
+
+    # Client -> Origin (allowlisted only)
+    iif != "wg0" oif "wg0" udp dport 30120 ip saddr @allow_udp_30120 accept
+
+    # Origin -> Client (return path)
+    iif "wg0" udp sport 30120 accept
   }
 }
 
@@ -28,5 +44,17 @@ table inet raw {
   chain prerouting {
     type filter hook prerouting priority -300;
     udp dport 30120 notrack
+  }
+}
+
+table ip nat {
+  chain prerouting {
+    type nat hook prerouting priority -100;
+    udp dport 30120 dnat to 10.66.0.2:30120
+  }
+
+  chain postrouting {
+    type nat hook postrouting priority 100;
+    oif "wg0" masquerade
   }
 }
