@@ -349,6 +349,7 @@ ensure auth_gate
 - Rate limit logs, disk IO can kill you during an attack.
 - Version and snapshot configs for fast recovery.
 - Assume adaptive attackers will probe your edges.
+ - See `infra/ops/README.md` for the ops runbook and toggles.
 
 ---
 
