@@ -150,7 +150,8 @@ table ip nat {
 }
 ```
 
-Note: With masquerade, Origin will see Entry IP as the client IP. If you need real client IPs, use policy routing instead of SNAT.
+Note: With masquerade, Origin will see Entry IP as the client IP. If you need real client IPs, use policy routing instead of SNAT and keep `ENFORCE_IP_MATCH=true`.
+If you keep masquerade, set `ENFORCE_IP_MATCH=false` in the API env.
 
 ### Origin (Hidden)
 ```
@@ -293,6 +294,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
 - `web/` Next.js 15.5.9 App Router (TSX) + HeroUI
 - `infra/` nftables, sysctl, WireGuard, nginx, systemd
 - `fivem/` auth_gate resource (deferrals)
+- `fivem/resources/[security]/auth_gate/README.md` runbook for deferrals
 
 ---
 

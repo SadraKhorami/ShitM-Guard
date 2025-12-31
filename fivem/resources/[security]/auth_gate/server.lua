@@ -1,6 +1,17 @@
 local API_BASE = GetConvar('auth_api_base', '')
 local API_SECRET = GetConvar('auth_api_secret', '')
 local VALIDATE_TIMEOUT_MS = tonumber(GetConvar('auth_api_timeout_ms', '5000')) or 5000
+local LOG_ERRORS = GetConvar('auth_log_errors', 'true') == 'true'
+local LOG_INTERVAL_SEC = tonumber(GetConvar('auth_log_interval_sec', '10')) or 10
+local lastLogAt = 0
+
+local function logWarn(message)
+  if not LOG_ERRORS then return end
+  local now = os.time()
+  if now - lastLogAt < LOG_INTERVAL_SEC then return end
+  lastLogAt = now
+  print(('[auth_gate] %s'):format(message))
+end
 
 local function extractIdentifiers(src)
   local ids = {
@@ -50,18 +61,21 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
   deferrals.update('Authorizing...')
 
   if API_BASE == '' or API_SECRET == '' then
+    logWarn('auth service misconfigured')
     deferrals.done('Auth service misconfigured')
     return
   end
 
   local ids = extractIdentifiers(src)
   if not ids.license and not ids.steam and not ids.rockstar then
+    logWarn('missing identifiers')
     deferrals.done('Not authorized')
     return
   end
 
   local ip = GetPlayerEndpoint(src) or ''
   if ip == '' then
+    logWarn('missing endpoint')
     deferrals.done('Not authorized')
     return
   end
@@ -81,6 +95,7 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
 
   local res = httpPost(url, payload, headers, VALIDATE_TIMEOUT_MS)
   if res.code ~= 200 then
+    logWarn(('auth failed (%s)'):format(res.code))
     deferrals.done('Not authorized')
     return
   end
