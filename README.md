@@ -189,7 +189,6 @@ Tune to your hardware. Use separate profiles for Entry and Origin.
 - Entry: `infra/sysctl/99-fivem-entry.conf`
 - Origin: `infra/sysctl/99-fivem-origin.conf`
 
-```
 Entry (forwarding enabled):
 ```
 net.core.netdev_max_backlog = 250000
