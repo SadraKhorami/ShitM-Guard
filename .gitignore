@@ -1,0 +1,25 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+
+# Env / secrets
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Runtime artifacts
+*.tgz

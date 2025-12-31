@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+
+:root {
+  color-scheme: light;
+  --bg-1: #f7f0e8;
+  --bg-2: #dfe8f7;
+  --card: #fff9f2;
+  --text: #1c1b19;
+  --muted: #5d6575;
+  --accent: #f26d21;
+  --accent-2: #1f6feb;
+  --border: #e1d5c9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: radial-gradient(1200px 800px at 20% 10%, #ffffff 0%, transparent 60%),
+    radial-gradient(900px 600px at 90% 20%, #ffe6cc 0%, transparent 55%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-2));
+  color: var(--text);
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 20px;
+}
+
+h1, h2 {
+  margin: 0;
+  color: var(--text);
+}
+
+p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.hero-copy h1 {
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  line-height: 1.05;
+  margin-bottom: 12px;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent-2);
+  margin-bottom: 12px;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(23, 36, 61, 0.12);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.result {
+  margin-top: 8px;
+  padding: 12px;
+  background: #fff6ea;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+.status {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.status.error {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.status.ok {
+  color: #7bd88f;
+  border-color: rgba(123, 216, 143, 0.4);
+}
+
+.token {
+  font-family: "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  word-break: break-all;
+}
+
+@media (max-width: 720px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
+}

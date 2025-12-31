@@ -1,0 +1,19 @@
+[Unit]
+Description=Entry Allowlist Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/shitm-guard/infra/entry-allowlist
+EnvironmentFile=/etc/shitm-guard/entry-allowlist.env
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=3
+User=nftd
+Group=nftd
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

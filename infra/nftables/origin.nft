@@ -1,0 +1,16 @@
+table inet filter {
+  chain input {
+    type filter hook input priority 0;
+    policy drop;
+
+    ct state invalid drop
+    ct state established,related accept
+    iif "lo" accept
+
+    # Only allow FiveM from WireGuard
+    iif "wg0" udp dport 30120 accept
+
+    # SSH only from VPN
+    iif "wg0" tcp dport 22 accept
+  }
+}

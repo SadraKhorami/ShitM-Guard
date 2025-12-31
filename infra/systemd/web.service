@@ -1,0 +1,17 @@
+[Unit]
+Description=ShitM-Guard Web
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/shitm-guard/web
+EnvironmentFile=/etc/shitm-guard/web.env
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=ShitM-Guard API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/shitm-guard/api
+EnvironmentFile=/etc/shitm-guard/api.env
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
