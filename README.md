@@ -275,6 +275,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
    - create user `nftd` with `CAP_NET_ADMIN` (or intentionally run as root)
    - listen on WG IP only, protect with `X-Entry-Token`
    - set `ALLOWED_SOURCES` to limit who can call the allowlist API
+   - IPv4 only by default (expand if you need IPv6)
 
 ### Origin
 1) Apply `infra/nftables/origin.nft`.
@@ -297,6 +298,7 @@ ensure auth_gate
 3) Apply Nginx config from `infra/nginx/web.conf`.
 4) Generate Cloudflare real IP list via `infra/nginx/update-cloudflare-ips.sh` and place it at `/etc/nginx/cloudflare_realip.conf`.
 5) Include `/etc/nginx/security.conf` and `/etc/nginx/ratelimits.conf` (templates in `infra/nginx/`).
+   - `ratelimits.conf` must be included in the `http {}` context.
 
 ---
 
