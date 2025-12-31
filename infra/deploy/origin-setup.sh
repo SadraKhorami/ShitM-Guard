@@ -17,7 +17,7 @@ fi
 apt-get update
 apt-get install -y nftables wireguard-tools
 
-install -m 0644 "${REPO_DIR}/infra/sysctl/99-fivem-ddos.conf" /etc/sysctl.d/99-fivem-ddos.conf
+install -m 0644 "${REPO_DIR}/infra/sysctl/99-fivem-origin.conf" /etc/sysctl.d/99-fivem-origin.conf
 sysctl --system
 
 if [ -f "${NFTA_CONF}" ]; then

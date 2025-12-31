@@ -3,11 +3,10 @@
 import { Button, Card, CardBody, CardHeader } from '@heroui/react';
 
 export default function HomePage() {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? '';
-  const loginUrl = apiBase ? `${apiBase}/auth/discord` : '';
+  const apiBase = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '');
+  const loginUrl = `${apiBase}/auth/discord`;
 
   const handleLogin = () => {
-    if (!loginUrl) return;
     window.location.href = loginUrl;
   };
 

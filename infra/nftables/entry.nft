@@ -7,6 +7,17 @@ table inet filter {
     timeout 90s
   }
 
+  chain prerouting {
+    type filter hook prerouting priority -150;
+    policy accept;
+
+    ct state invalid drop
+
+    # Drop UDP 30120 early if not allowlisted (protects conntrack/NAT)
+    iif "wg0" accept
+    udp dport 30120 ip saddr != @allow_udp_30120 drop
+  }
+
   chain input {
     type filter hook input priority 0;
     policy drop;
@@ -18,14 +29,15 @@ table inet filter {
     # SSH only from management IP
     ip saddr { 203.0.113.10 } tcp dport 22 accept
 
-    # WireGuard (replace with Origin public IP)
-    ip saddr { 198.51.100.20 } udp dport 51820 accept
+    # WireGuard peers (replace with Origin + Web/API public IPs)
+    ip saddr { 198.51.100.20, 198.51.100.30 } udp dport 51820 accept
+
+    # Allowlist service from Web/API WG peer
+    iif "wg0" ip saddr { 10.66.0.3 } tcp dport 9001 accept
 
     # Allow only allowlisted UDP clients
     udp dport 30120 ip saddr @allow_udp_30120 accept
 
-    # Drop noisy unknowns fast
-    udp dport 30120 limit rate over 200/second drop
   }
 
   chain forward {
@@ -33,6 +45,9 @@ table inet filter {
     policy drop;
 
     ct state invalid drop
+
+    # Per-source UDP rate limit (tune for your player base)
+    udp dport 30120 meter fivem_rate { ip saddr limit rate over 1500/second burst 3000 packets } drop
 
     # Client -> Origin (allowlisted only)
     iif != "wg0" oif "wg0" udp dport 30120 ip saddr @allow_udp_30120 accept

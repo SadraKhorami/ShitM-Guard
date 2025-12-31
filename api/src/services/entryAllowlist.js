@@ -8,17 +8,21 @@ const allowlistIp = async (ip, ttlSeconds) => {
 
   const ttl = Math.min(ttlSeconds, config.ENTRY_ALLOWLIST_MAX_TTL_SECONDS);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2000);
+
   const res = await fetch(config.ENTRY_ALLOWLIST_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Entry-Token': config.ENTRY_ALLOWLIST_TOKEN
     },
-    body: JSON.stringify({ ip, ttl })
-  });
+    body: JSON.stringify({ ip, ttl }),
+    signal: controller.signal
+  }).finally(() => clearTimeout(timeoutId));
 
   if (!res.ok) {
-    const body = await res.text();
+    const body = await res.text().catch(() => '');
     logger.warn({ status: res.status, body }, 'entry allowlist failed');
     throw new Error('entry_allowlist_failed');
   }

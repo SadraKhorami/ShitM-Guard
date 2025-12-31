@@ -34,7 +34,7 @@ if ! id nftd >/dev/null 2>&1; then
   useradd -r -s /usr/sbin/nologin nftd
 fi
 
-install -m 0644 "${REPO_DIR}/infra/sysctl/99-fivem-ddos.conf" /etc/sysctl.d/99-fivem-ddos.conf
+install -m 0644 "${REPO_DIR}/infra/sysctl/99-fivem-entry.conf" /etc/sysctl.d/99-fivem-entry.conf
 sysctl --system
 
 if [ -f "${NFTA_CONF}" ]; then

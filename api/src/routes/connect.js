@@ -22,12 +22,17 @@ router.get('/csrf', requireAuth, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
-const normalizeIdentifier = (value) => {
+const normalizeIdentifier = (value, type) => {
   if (!value) return null;
   const trimmed = value.trim().toLowerCase();
-  if (trimmed.length < 5 || trimmed.length > 96) return null;
-  if (!/^[a-z0-9:]+$/.test(trimmed)) return null;
-  return trimmed;
+  const prefixes = type === 'license' ? ['license:', 'license2:'] : [`${type}:`];
+  const prefix = prefixes.find((p) => trimmed.startsWith(p));
+  if (!prefix) return null;
+
+  const rest = trimmed.slice(prefix.length);
+  if (rest.length < 5 || rest.length > 96) return null;
+  if (!/^[a-z0-9]+$/.test(rest)) return null;
+  return `${prefix}${rest}`;
 };
 
 router.get('/me', requireAuth, (req, res) => {
@@ -43,9 +48,9 @@ router.get('/me', requireAuth, (req, res) => {
 });
 
 router.post('/identifiers', requireAuth, async (req, res) => {
-  const license = normalizeIdentifier(req.body.license);
-  const steam = normalizeIdentifier(req.body.steam);
-  const rockstar = normalizeIdentifier(req.body.rockstar);
+  const license = normalizeIdentifier(req.body.license, 'license');
+  const steam = normalizeIdentifier(req.body.steam, 'steam');
+  const rockstar = normalizeIdentifier(req.body.rockstar, 'rockstar');
 
   if (!license && !steam && !rockstar) {
     return res.status(400).json({ error: 'identifiers_required' });

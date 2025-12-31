@@ -20,7 +20,7 @@ type ConnectInfo = {
 };
 
 export default function ConsolePage() {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? '';
+  const apiBase = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '');
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,11 +29,6 @@ export default function ConsolePage() {
   const [identifiers, setIdentifiers] = useState({ license: '', steam: '', rockstar: '' });
 
   useEffect(() => {
-    if (!apiBase) {
-      setError('api_not_configured');
-      return;
-    }
-
     const load = async () => {
       const res = await fetch(`${apiBase}/api/me`, { credentials: 'include' });
       if (!res.ok) {

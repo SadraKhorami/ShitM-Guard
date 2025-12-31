@@ -24,3 +24,5 @@ Notes:
 - Scripts will overwrite `/etc/nftables.conf` (a backup is created).
 - You must install Node.js 18+ on Entry (for allowlist) and Web/API servers.
 - Edit env files under `/etc/shitm-guard/` before starting services.
+- Sysctl profiles are role-specific: Entry uses `99-fivem-entry.conf`, Origin uses `99-fivem-origin.conf`.
+- If API is on a separate host, configure `infra/wireguard/web-wg0.conf` so it can reach the Entry allowlist.

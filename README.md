@@ -25,6 +25,7 @@ Players
        - Next.js 15.5.9 (App Router + TSX)
        - Node.js + Express + Mongoose (API)
        - Connect Endpoint (token + allowlist issuing)
+       - Allowlist API over WireGuard to Entry (private)
   -> Entry Gateway (Public IP, UDP 30120)
        - nftables: fast drop / rate limit / allowlist
        - no heavy processing
@@ -48,7 +49,7 @@ This avoids any undocumented query parsing in FiveM’s UDP path.
    - Bound to Discord ID + FiveM identifiers (license/steam/rockstar)
    - Returns Entry host/port **only after** validation
    - Token is used for auditing, UDP does not rely on it
-3) API calls the Entry allowlist service to allow the user IP in nftables (timeout 30-90s).
+3) API calls the Entry allowlist service over WG to allow the user IP in nftables (timeout 30-90s).
 4) Client connects to Entry IP:port (UDP 30120).
 5) Origin `playerConnecting/deferrals` validates against API:
    - token exists, unused, not expired
@@ -95,6 +96,17 @@ table inet filter {
     timeout 90s
   }
 
+  chain prerouting {
+    type filter hook prerouting priority -150;
+    policy accept;
+
+    ct state invalid drop
+
+    # Drop UDP 30120 early if not allowlisted (protects conntrack/NAT)
+    iif "wg0" accept
+    udp dport 30120 ip saddr != @allow_udp_30120 drop
+  }
+
   chain input {
     type filter hook input priority 0;
     policy drop;
@@ -106,14 +118,14 @@ table inet filter {
     # SSH only from management IP
     ip saddr { 203.0.113.10 } tcp dport 22 accept
 
-    # WireGuard (replace with Origin public IP)
-    ip saddr { 198.51.100.20 } udp dport 51820 accept
+    # WireGuard peers (replace with Origin + Web/API public IPs)
+    ip saddr { 198.51.100.20, 198.51.100.30 } udp dport 51820 accept
+
+    # Allowlist service from Web/API WG peer
+    iif "wg0" ip saddr { 10.66.0.3 } tcp dport 9001 accept
 
     # UDP 30120 only from allowlist
     udp dport 30120 ip saddr @allow_udp_30120 accept
-
-    # Fast drop for unknowns
-    udp dport 30120 limit rate over 200/second drop
   }
 
   chain forward {
@@ -121,6 +133,9 @@ table inet filter {
     policy drop;
 
     ct state invalid drop
+
+    # Per-source UDP rate limit (tune)
+    udp dport 30120 meter fivem_rate { ip saddr limit rate over 1500/second burst 3000 packets } drop
 
     # Client -> Origin (allowlisted only)
     iif != "wg0" oif "wg0" udp dport 30120 ip saddr @allow_udp_30120 accept
@@ -169,8 +184,13 @@ table inet filter {
 ---
 
 ## sysctl / Kernel Tuning (UDP + conntrack)
-Tune to your hardware. These are starting points.
+Tune to your hardware. Use separate profiles for Entry and Origin.
 
+- Entry: `infra/sysctl/99-fivem-entry.conf`
+- Origin: `infra/sysctl/99-fivem-origin.conf`
+
+```
+Entry (forwarding enabled):
 ```
 net.core.netdev_max_backlog = 250000
 net.core.rmem_max = 134217728
@@ -181,6 +201,26 @@ net.ipv4.udp_rmem_min = 16384
 net.ipv4.udp_wmem_min = 16384
 
 net.ipv4.ip_forward = 1
+
+net.netfilter.nf_conntrack_max = 262144
+net.netfilter.nf_conntrack_udp_timeout = 30
+net.netfilter.nf_conntrack_udp_timeout_stream = 120
+
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+```
+
+Origin (forwarding disabled):
+```
+net.core.netdev_max_backlog = 250000
+net.core.rmem_max = 134217728
+net.core.wmem_max = 134217728
+net.core.rmem_default = 262144
+net.core.wmem_default = 262144
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
+
+net.ipv4.ip_forward = 0
 
 net.netfilter.nf_conntrack_max = 262144
 net.netfilter.nf_conntrack_udp_timeout = 30
@@ -272,10 +312,10 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
 
 ## High Level Deployment Steps
 1) Deploy **separate** Entry and Origin VMs 
-2) Configure WireGuard between Entry and Origin.
+2) Configure WireGuard between Entry and Origin (and Web/API if separate).
 3) Apply nftables on both servers.
 4) Deploy web (Next.js + API) behind Cloudflare.
-5) Implement Connect Endpoint + Entry allowlist API.
+5) Implement Connect Endpoint + Entry allowlist API (reachable only over WG).
 6) Enable deferrals on FXServer.
 7) Restrict txAdmin to VPN only.
 8) Monitor and test under controlled load.
@@ -294,7 +334,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
 ## Practical Deployment (Minimal)
 ### Entry Gateway
 1) Apply `infra/nftables/entry.nft`.
-2) Configure `infra/wireguard/entry-wg0.conf`.
+2) Configure `infra/wireguard/entry-wg0.conf` (add Web/API peer if API is separate).
 3) Allowlist service:
    - `/opt/shitm-guard/infra/entry-allowlist`
    - copy `infra/entry-allowlist/.env.example` to `/etc/shitm-guard/entry-allowlist.env`
@@ -302,12 +342,13 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
    - create user `nftd` with `CAP_NET_ADMIN` (or intentionally run as root)
    - set `LISTEN_HOST` to the Entry WG IP (example: `10.66.0.1`)
    - listen on WG IP only, protect with `X-Entry-Token`
-   - set `ALLOWED_SOURCES` to limit who can call the allowlist API
+   - set `ALLOWED_SOURCES` to limit who can call the allowlist API (example: Web/API WG IP `10.66.0.3`)
    - IPv4 only by default (expand if you need IPv6)
 4) Optional helper: `infra/deploy/entry-setup.sh`
 5) Edit `infra/nftables/entry.nft`:
-   - replace the Origin public IP in the WireGuard allow rule
+   - replace the Origin + Web/API public IPs in the WireGuard allow rule
    - replace `10.66.0.2` with your Origin WG IP
+   - replace `10.66.0.3` with your Web/API WG IP (for allowlist)
 
 ### Origin
 1) Apply `infra/nftables/origin.nft`.
@@ -327,13 +368,15 @@ ensure auth_gate
 
 ### Web/API
 1) Deploy `api/` and fill `.env` from `api/.env.example`.
-2) Build and start `web/`.
-3) Apply Nginx config from `infra/nginx/web.conf`.
-4) Generate Cloudflare real IP list via `infra/nginx/update-cloudflare-ips.sh` and place it at `/etc/nginx/cloudflare_realip.conf`.
-5) Include `/etc/nginx/security.conf` and `/etc/nginx/ratelimits.conf` (templates in `infra/nginx/`).
+2) If API is separate from Entry, configure `infra/wireguard/web-wg0.conf` so API can reach the allowlist over WG.
+3) Build and start `web/`.
+4) Apply Nginx config from `infra/nginx/web.conf` (update the Origin IP allowlist in `/api/fivem/validate` to the IP used to reach the API).
+5) Generate Cloudflare real IP list via `infra/nginx/update-cloudflare-ips.sh` and place it at `/etc/nginx/cloudflare_realip.conf`.
+6) Include `/etc/nginx/security.conf` and `/etc/nginx/ratelimits.conf` (templates in `infra/nginx/`).
    - `ratelimits.conf` must be included in the `http {}` context.
    - `ENTRY_ALLOWLIST_URL` must point to the Entry WG IP (example: `http://10.66.0.1:9001/allowlist`).
-6) Optional helper: `infra/deploy/web-setup.sh`
+   - `NEXT_PUBLIC_API_BASE` is optional if API is on the same domain (set at build time if you use it).
+7) Optional helper: `infra/deploy/web-setup.sh`
 
 ---
 
@@ -344,7 +387,7 @@ ensure auth_gate
 - Rate limit logs, disk IO can kill you during an attack.
 - Version and snapshot configs for fast recovery.
 - Assume adaptive attackers will probe your edges.
- - See `infra/ops/README.md` for the ops runbook and toggles.
+- See `infra/ops/README.md` for the ops runbook and toggles.
 
 ---
 
