@@ -10,6 +10,10 @@ const NFT_FAMILY = process.env.NFT_FAMILY || 'inet';
 const NFT_TABLE = process.env.NFT_TABLE || 'filter';
 const NFT_SET = process.env.NFT_SET || 'allow_udp_30120';
 const MAX_TTL_SECONDS = parseInt(process.env.MAX_TTL_SECONDS || '90', 10);
+const ALLOWED_SOURCES = (process.env.ALLOWED_SOURCES || '')
+  .split(',')
+  .map((ip) => ip.trim())
+  .filter(Boolean);
 
 const required = ['LISTEN_HOST', 'ENTRY_TOKEN'];
 const missing = required.filter((key) => !process.env[key]);
@@ -27,6 +31,18 @@ const sendJson = (res, code, payload) => {
   res.end(body);
 };
 
+const normalizeIp = (value) => {
+  if (!value) return '';
+  if (value.startsWith('::ffff:')) return value.replace('::ffff:', '');
+  return value;
+};
+
+const isAllowedSource = (remoteAddress) => {
+  if (ALLOWED_SOURCES.length === 0) return true;
+  const ip = normalizeIp(remoteAddress);
+  return ALLOWED_SOURCES.includes(ip);
+};
+
 const addAllowlist = (ip, ttlSeconds, cb) => {
   const ttl = Math.min(ttlSeconds, MAX_TTL_SECONDS);
   const element = `{ ${ip} timeout ${ttl}s }`;
@@ -40,6 +56,10 @@ const addAllowlist = (ip, ttlSeconds, cb) => {
 const server = http.createServer((req, res) => {
   if (req.method !== 'POST' || req.url !== '/allowlist') {
     return sendJson(res, 404, { error: 'not_found' });
+  }
+
+  if (!isAllowedSource(req.socket.remoteAddress)) {
+    return sendJson(res, 403, { error: 'forbidden' });
   }
 
   const token = req.headers['x-entry-token'];
