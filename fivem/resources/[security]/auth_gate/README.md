@@ -4,7 +4,7 @@ Purpose: fail fast for unauthorized connections before heavy server work.
 
 ## server.cfg
 ```
-set auth_api_base "https://game.ir"
+set auth_api_base "https://yourdomain.com"
 set auth_api_secret "replace-me"
 set auth_api_timeout_ms "5000"
 set auth_log_errors "true"

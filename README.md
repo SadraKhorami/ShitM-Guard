@@ -61,7 +61,7 @@ Result: Entry drops everything without allowlist, and Origin refuses unauthorize
 ---
 
 ## Connection Flow (Option 2: Only If Verified)
-If you insist on `connect play.game.ir?token=XXXX`:
+If you insist on `connect play.yourdomain.com?token=XXXX`:
 - You must **prove** the token is reliably available in `playerConnecting` on all clients.
 - Required tests:
   - multiple client types (Steam/Rockstar)
@@ -238,7 +238,7 @@ If your link is saturated, these settings won’t save you.
 ### Role
 - Protects HTTP only, not UDP.
 - Issues tokens and enforces auth and rate limits.
-- Domain `game.ir` is **web only**, not a UDP protection mechanism.
+- Domain `yourdomain.com` is **web only**, not a UDP protection mechanism.
 
 ### Practical Controls
 - Heavy rate limits on `/connect` and `/api/connect`.
@@ -361,7 +361,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
 
 Example `server.cfg`:
 ```
-set auth_api_base "https://game.ir"
+set auth_api_base "https://yourdomain.com"
 set auth_api_secret "replace me"
 set auth_api_timeout_ms "5000"
 ensure auth_gate
