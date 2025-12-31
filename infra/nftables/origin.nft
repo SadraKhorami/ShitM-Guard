@@ -1,3 +1,5 @@
+flush ruleset
+
 table inet filter {
   chain input {
     type filter hook input priority 0;

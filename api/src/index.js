@@ -126,6 +126,13 @@ app.use('/api', connectRouter);
 app.use('/api/fivem', fivemRouter);
 
 app.use((err, req, res, next) => {
+  if (err && err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ error: 'csrf_invalid' });
+  }
+  return next(err);
+});
+
+app.use((err, req, res, next) => {
   logger.error({ err }, 'unhandled');
   res.status(500).json({ error: 'server_error' });
 });

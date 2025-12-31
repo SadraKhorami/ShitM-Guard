@@ -130,13 +130,6 @@ table inet filter {
   }
 }
 
-table inet raw {
-  chain prerouting {
-    type filter hook prerouting priority -300;
-    udp dport 30120 notrack
-  }
-}
-
 table ip nat {
   chain prerouting {
     type nat hook prerouting priority -100;
@@ -151,7 +144,7 @@ table ip nat {
 ```
 
 Note: With masquerade, Origin will see Entry IP as the client IP. If you need real client IPs, use policy routing instead of SNAT and keep `ENFORCE_IP_MATCH=true`.
-If you keep masquerade, set `ENFORCE_IP_MATCH=false` in the API env.
+If you keep masquerade, set `ENFORCE_IP_MATCH=false` in the API env. NAT requires conntrack, so do not use `notrack` on this path.
 
 ### Origin (Hidden)
 ```
@@ -307,6 +300,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
    - copy `infra/entry-allowlist/.env.example` to `/etc/shitm-guard/entry-allowlist.env`
    - systemd: `infra/systemd/entry-allowlist.service`
    - create user `nftd` with `CAP_NET_ADMIN` (or intentionally run as root)
+   - set `LISTEN_HOST` to the Entry WG IP (example: `10.66.0.1`)
    - listen on WG IP only, protect with `X-Entry-Token`
    - set `ALLOWED_SOURCES` to limit who can call the allowlist API
    - IPv4 only by default (expand if you need IPv6)
@@ -338,6 +332,7 @@ ensure auth_gate
 4) Generate Cloudflare real IP list via `infra/nginx/update-cloudflare-ips.sh` and place it at `/etc/nginx/cloudflare_realip.conf`.
 5) Include `/etc/nginx/security.conf` and `/etc/nginx/ratelimits.conf` (templates in `infra/nginx/`).
    - `ratelimits.conf` must be included in the `http {}` context.
+   - `ENTRY_ALLOWLIST_URL` must point to the Entry WG IP (example: `http://10.66.0.1:9001/allowlist`).
 6) Optional helper: `infra/deploy/web-setup.sh`
 
 ---

@@ -17,7 +17,7 @@ REPO_DIR=/opt/shitm-guard sudo bash infra/deploy/web-setup.sh
 
 ## Validate (basic checks)
 ```
-sudo bash infra/deploy/validate.sh
+sudo bash infra/deploy/validate.sh <entry|origin|web|all>
 ```
 
 Notes:
