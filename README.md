@@ -341,6 +341,7 @@ Do **not** expose txAdmin publicly unless you have a concrete threat model.
    - systemd: `infra/systemd/entry-allowlist.service`
    - create user `nftd` with `CAP_NET_ADMIN` (or intentionally run as root)
    - set `LISTEN_HOST` to the Entry WG IP (example: `10.66.0.1`)
+   - set `NFT_BIN` if `nft` is not in the service PATH (default `/usr/sbin/nft`)
    - listen on WG IP only, protect with `X-Entry-Token`
    - set `ALLOWED_SOURCES` to limit who can call the allowlist API (example: Web/API WG IP `10.66.0.3`)
    - IPv4 only by default (expand if you need IPv6)

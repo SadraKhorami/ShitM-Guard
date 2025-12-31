@@ -6,6 +6,7 @@ const net = require('net');
 const LISTEN_HOST = process.env.LISTEN_HOST;
 const LISTEN_PORT = parseInt(process.env.LISTEN_PORT || '9001', 10);
 const ENTRY_TOKEN = process.env.ENTRY_TOKEN;
+const NFT_BIN = process.env.NFT_BIN || '/usr/sbin/nft';
 const NFT_FAMILY = process.env.NFT_FAMILY || 'inet';
 const NFT_TABLE = process.env.NFT_TABLE || 'filter';
 const NFT_SET = process.env.NFT_SET || 'allow_udp_30120';
@@ -49,10 +50,10 @@ const addAllowlist = (ip, ttlSeconds, cb) => {
   const replaceArgs = ['replace', 'element', NFT_FAMILY, NFT_TABLE, NFT_SET, element];
   const addArgs = ['add', 'element', NFT_FAMILY, NFT_TABLE, NFT_SET, element];
 
-  execFile('nft', replaceArgs, (err, stdout, stderr) => {
+  execFile(NFT_BIN, replaceArgs, (err, stdout, stderr) => {
     if (!err) return cb(null, stdout);
 
-    execFile('nft', addArgs, (addErr, addStdout, addStderr) => {
+    execFile(NFT_BIN, addArgs, (addErr, addStdout, addStderr) => {
       if (addErr) return cb(addErr, addStderr || addStdout || stderr || stdout);
       return cb(null, addStdout);
     });
