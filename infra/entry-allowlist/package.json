@@ -1,6 +1,7 @@
 {
   "name": "entry-allowlist",
   "version": "1.0.0",
+  "author": "khorami.dev",
   "private": true,
   "main": "src/index.js",
   "engines": {

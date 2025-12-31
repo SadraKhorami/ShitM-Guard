@@ -1,6 +1,7 @@
 {
   "name": "shitm-guard-web",
   "version": "1.0.0",
+  "author": "khorami.dev",
   "private": true,
   "engines": {
     "node": ">=18.18"
