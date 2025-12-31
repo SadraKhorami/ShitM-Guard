@@ -437,7 +437,7 @@ If your uplink or DC capacity is saturated, effectiveness collapses.
 - volumetric DDoS that saturates your uplink/ISP
 - distributed attacks using compromised real accounts
 - upstream carpet bombing
-- structural limits of Iranian hosting without real scrubbing
+- structural limits of hosting without real scrubbing
 
 ---
 
